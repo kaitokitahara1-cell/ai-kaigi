@@ -6,7 +6,8 @@ on:
     - cron: "47 21 * * *"   # 毎日 6:47（日本時間）
   push:
     paths:
-      - ".github/run-now"     # このファイルを更新すると、すぐ1回動く
+      - ".github/run-now"       # このファイルを更新すると、すぐ1回会議が開かれる
+      - "viewer.template.html"  # 画面のひな形を直したときは、会議なしで画面だけ作り直す
   workflow_dispatch:          # Actions 画面から手動でも実行できる
     inputs:
       agenda:
@@ -41,6 +42,7 @@ jobs:
       - run: pip install anthropic
 
       - name: AIの会議を作る
+        if: github.event_name != 'push' || contains(join(github.event.commits.*.modified, ','), '.github/run-now')
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           AGENDA: ${{ github.event.inputs.agenda }}
