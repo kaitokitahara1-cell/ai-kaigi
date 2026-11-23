@@ -73,7 +73,9 @@ def persona_prompt(p, shop, others=None):
         "賛成するときも、自分のこだわりから条件や反論を必ず1つ付ける。\n"
         "- まとめ役でない人は、自分の推す案を譲らない。\n"
         "- 覚えていることや相手との関係を、ときどき会話に出す（「この前も〜って言ってたよね」など）。\n"
-        "- 1回の発言は1〜2文、50字以内。前の人の発言に反応する。\n"
+        + ("- 1回の発言は2〜3文、90字以内。まとめ役として流れを整理する。\n" if p.get("is_chair")
+           else "- 1回の発言は1〜2文、50字以内。前の人の発言に反応する。\n")
+        + "- 前に自分が言ったことを、同じ言い回しでくり返さない。\n"
         "- 発言の本文だけを書く。先頭に自分の名前や「〇〇：」を付けない。"
     )
 
@@ -89,7 +91,7 @@ def say(p, shop, agenda, context, recap, lines, by_id, extra=""):
         + f"\nここまでの会話:\n{transcript(lines, by_id) or '（まだ誰も話していない）'}\n\n"
         f"{extra}あなた（{p['name']}）の次の発言を書いてください。"
     )
-    text = ask(persona_prompt(p, shop, by_id), msg, 200).strip().strip("「」")
+    text = ask(persona_prompt(p, shop, by_id), msg, 400).strip().strip("「」")
     # 「トメ：」「松本会長: 」のような名前の付け足しを取る
     for _ in range(2):
         m = re.match(r"^\s*([^\s。、！？「」]{1,8}?)\s*[：:]\s*", text)
