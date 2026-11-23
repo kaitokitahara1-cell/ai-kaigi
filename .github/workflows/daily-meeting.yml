@@ -1,0 +1,68 @@
+# 毎朝AIの会議を1回作り、会議室の画面（GitHub Pages）を更新する
+name: daily-meeting
+
+on:
+  schedule:
+    - cron: "47 21 * * *"   # 毎日 6:47（日本時間）
+  workflow_dispatch:          # Actions 画面から手動でも実行できる
+    inputs:
+      agenda:
+        description: "議題（空なら agendas.json の次の議題）"
+        required: false
+      context:
+        description: "状況の説明（議題を入れたときだけ使う）"
+        required: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: daily-meeting
+  cancel-in-progress: false
+
+jobs:
+  meeting:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install anthropic
+
+      - name: AIの会議を作る
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AGENDA: ${{ github.event.inputs.agenda }}
+          CONTEXT: ${{ github.event.inputs.context }}
+        run: |
+          if [ -n "$AGENDA" ]; then
+            python generate_meeting.py "$AGENDA" --context "$CONTEXT"
+          else
+            python generate_meeting.py
+          fi
+
+      - name: 画面を作る
+        run: python build.py
+
+      - name: 結果をリポジトリに保存
+        run: |
+          git config user.name "ai-kaigi-bot"
+          git config user.email "ai-kaigi-bot@users.noreply.github.com"
+          git add -A
+          git commit -m "会議 $(TZ=Asia/Tokyo date +%F)" || echo "変更なし"
+          git push
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI経営会議室｜大衆酒場 にしぐち</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#211a16; --panel:#2c241f; --panel2:#362c26; --ink:#f6eee6; --sub:#bfae9f;
+    --wood:#8a5a3b; --wood2:#6e4529; --accent:#f2b544; --line:#4a3d35;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Maru Gothic",system-ui,sans-serif}
+  .wrap{max-width:480px;margin:0 auto;padding:16px 14px 110px}
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-bottom:12px}
+  header h1{font-size:20px;margin:0;font-weight:900;letter-spacing:.02em}
+  header .shop{font-size:12px;color:var(--sub)}
+  .badge{font-size:11px;background:var(--accent);color:#2a1d0e;border-radius:999px;padding:3px 10px;font-weight:700;white-space:nowrap}
+  .agenda{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+  .agenda .k{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.1em}
+  .agenda .t{font-size:18px;font-weight:900;margin:2px 0 4px}
+  .agenda .c{font-size:12px;color:var(--sub);line-height:1.5}
+
+  /* 会議室 */
+  .room{position:relative;height:300px;border-radius:18px;overflow:hidden;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255,210,140,.18), transparent 60%),
+      repeating-linear-gradient(90deg,#3a2e27 0 46px,#352a24 46px 92px);
+    border:1px solid var(--line)}
+  .lamp{position:absolute;left:50%;top:0;width:2px;height:34px;background:#5a4a40;transform:translateX(-50%)}
+  .lamp::after{content:"";position:absolute;left:50%;top:30px;width:56px;height:20px;transform:translateX(-50%);
+    background:#e9c27a;border-radius:0 0 30px 30px;box-shadow:0 10px 60px 20px rgba(255,200,110,.25)}
+  .table{position:absolute;left:50%;top:56%;width:190px;height:110px;transform:translate(-50%,-50%);
+    border-radius:50%;background:radial-gradient(ellipse at 40% 35%,var(--wood),var(--wood2));
+    box-shadow:0 14px 0 #4a2d1a, 0 20px 30px rgba(0,0,0,.45)}
+  .table .doc{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-6deg);
+    width:58px;height:40px;background:#f3ead9;border-radius:3px;font-size:8px;color:#5a4636;padding:4px;line-height:1.3;font-weight:700}
+  .seat{position:absolute;display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform .25s}
+  .seat .av{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:24px;font-weight:900;color:#fff;
+    border:3px solid rgba(255,255,255,.15);box-shadow:0 6px 12px rgba(0,0,0,.35);transition:box-shadow .25s,border-color .25s}
+  .seat .nm{font-size:11px;background:rgba(0,0,0,.45);padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .seat.on{transform:scale(1.12)}
+  .seat.on .av{border-color:var(--accent);box-shadow:0 0 0 6px rgba(242,181,68,.25),0 0 24px rgba(242,181,68,.6)}
+  .seat .dots{position:absolute;top:-14px;right:-8px;background:#fff;color:#333;border-radius:10px;font-size:12px;padding:0 6px;opacity:0;transition:opacity .2s}
+  .seat.on .dots{opacity:1;animation:bob 1s infinite}
+  @keyframes bob{50%{transform:translateY(-3px)}}
+  .s0{left:50%;top:14%;transform:translateX(-50%)} .s0.on{transform:translateX(-50%) scale(1.12)}
+  .s1{right:6%;top:46%} .s2{left:50%;bottom:4%;transform:translateX(-50%)} .s2.on{transform:translateX(-50%) scale(1.12)}
+  .s3{left:6%;top:46%}
+
+  /* 今の発言 */
+  .now{min-height:96px;margin:12px 0 18px;background:#fbf5ec;color:#2b2019;border-radius:16px;padding:12px 14px;position:relative;
+    box-shadow:0 8px 20px rgba(0,0,0,.3)}
+  .now::before{content:"";position:absolute;top:-9px;left:var(--tail,50%);border:9px solid transparent;border-top:0;border-bottom-color:#fbf5ec;transform:translateX(-50%)}
+  .now .who{font-size:12px;font-weight:900;margin-bottom:4px}
+  .now .txt{font-size:16px;line-height:1.6;font-weight:500;min-height:2em}
+  .caret{display:inline-block;width:2px;height:1em;background:#2b2019;vertical-align:-2px;animation:blink .8s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  h2{font-size:14px;color:var(--sub);margin:18px 0 8px;font-weight:700}
+  .log{display:flex;flex-direction:column;gap:10px}
+  .msg{display:flex;gap:8px;align-items:flex-start;animation:pop .25s ease-out}
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}}
+  .msg .av{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:900;color:#fff}
+  .msg .b{background:var(--panel2);border-radius:4px 14px 14px 14px;padding:8px 11px;font-size:14px;line-height:1.55}
+  .msg .b .n{display:block;font-size:11px;font-weight:700;margin-bottom:2px}
+  .empty{font-size:13px;color:var(--sub);text-align:center;padding:10px}
+
+  /* 投票 */
+  .vote{display:none;margin-top:20px}
+  .vote.show{display:block;animation:pop .4s ease-out}
+  .opt{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:border-color .2s}
+  .opt:hover{border-color:var(--accent)}
+  .opt .row{display:flex;align-items:center;gap:10px}
+  .opt .id{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:900;font-size:18px;background:var(--accent);color:#2a1d0e}
+  .opt .ti{font-size:16px;font-weight:900}
+  .opt .by{font-size:11px;color:var(--sub)}
+  .opt .fc{font-size:12px;color:var(--sub);margin:8px 0 6px}
+  .bar{height:8px;background:#1b1512;border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .4s}
+  .cnt{font-size:12px;text-align:right;margin-top:3px}
+  .note{font-size:11px;color:var(--sub);line-height:1.5}
+  .arch{display:flex;flex-direction:column;gap:6px}
+  .arch a{display:flex;gap:10px;align-items:center;text-decoration:none;color:var(--ink);background:var(--panel);
+    border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:13px}
+  .arch a.cur{border-color:var(--accent)}
+  .arch a b{color:var(--accent);font-size:12px;white-space:nowrap}
+
+  /* 操作 */
+  .ctrl{position:fixed;left:0;right:0;bottom:0;background:rgba(24,19,16,.94);backdrop-filter:blur(6px);border-top:1px solid var(--line);
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
+  .ctrl .in{max-width:480px;margin:0 auto;display:flex;gap:8px;align-items:center}
+  button{font-family:inherit;border:0;border-radius:12px;padding:10px 12px;font-weight:700;font-size:14px;cursor:pointer;background:var(--panel2);color:var(--ink)}
+  button.main{flex:1;background:var(--accent);color:#2a1d0e;font-size:16px}
+  .prog{position:absolute;left:0;top:0;height:3px;background:var(--accent);transition:width .3s}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="shop" id="shop"></div>
+      <h1>AI経営会議室</h1>
+    </div>
+    <span class="badge" id="no"></span>
+  </header>
+
+  <section class="agenda">
+    <div class="k">今日の議題</div>
+    <div class="t" id="agenda"></div>
+    <div class="c" id="context"></div>
+  </section>
+
+  <section class="room" id="room">
+    <div class="lamp"></div>
+    <div class="table"><div class="doc" id="doc"></div></div>
+  </section>
+
+  <section class="now" id="now">
+    <div class="who" id="who">▶ を押すと会議が始まります</div>
+    <div class="txt" id="txt"></div>
+  </section>
+
+  <h2>会議のログ</h2>
+  <div class="log" id="log"><div class="empty">まだ発言はありません</div></div>
+
+  <section class="vote" id="vote">
+    <h2>あなたが決めてください</h2>
+    <div id="opts"></div>
+    <p class="note" id="fnote"></p>
+    <p class="note">※この画面の投票ボタンは試作用のデモです。本番はInstagramのコメント数（A／B）をここに表示します。</p>
+  </section>
+
+  <h2>過去の会議</h2>
+  <div class="arch" id="arch"></div>
+</div>
+
+<nav class="ctrl">
+  <div class="prog" id="prog"></div>
+  <div class="in">
+    <button id="restart" aria-label="最初から">⏮</button>
+    <button class="main" id="play">▶ 会議を再生</button>
+    <button id="speed">1x</button>
+    <button id="all">全部</button>
+  </div>
+</nav>
+
+<script type="application/json" id="personas-data">__PERSONAS__</script>
+<script type="application/json" id="meeting-data">__MEETING__</script>
+<script type="application/json" id="archive-data">__ARCHIVE__</script>
+<script>
+(function(){
+  const P = JSON.parse(document.getElementById('personas-data').textContent);
+  const M = JSON.parse(document.getElementById('meeting-data').textContent);
+  const byId = {}; P.personas.forEach(p => byId[p.id] = p);
+  const $ = id => document.getElementById(id);
+  const initial = p => p.name.replace(/(会長|店長|料理長|常連客|さん)/g,'').charAt(0);
+
+  $('shop').textContent = P.shop.place + '｜' + P.shop.name;
+  $('no').textContent = '第' + M.number + '回 · ' + M.date.slice(5).replace('-','/');
+  $('agenda').textContent = M.agenda;
+  $('context').textContent = M.context;
+  $('doc').textContent = '議題：' + M.agenda.slice(0, 12) + '…';
+
+  // 席を並べる（上・右・下・左）
+  const room = $('room'); const seatEl = {};
+  P.personas.forEach((p, i) => {
+    const s = document.createElement('div');
+    s.className = 'seat s' + (i % 4);
+    s.innerHTML = '<div class="av" style="background:'+p.color+'">'+initial(p)+'<span class="dots">…</span></div><div class="nm">'+p.name+'</div>';
+    s.querySelector('.av').style.position = 'relative';
+    room.appendChild(s); seatEl[p.id] = s;
+  });
+
+  // 投票
+  const votes = {}; M.options.forEach(o => votes[o.id] = o.votes || 0);
+  function renderVotes(){
+    const total = Object.values(votes).reduce((a,b)=>a+b,0) || 1;
+    $('opts').innerHTML = M.options.map(o => {
+      const pr = byId[o.proposer];
+      const pct = Math.round(votes[o.id] / total * 100);
+      return '<div class="opt" data-id="'+o.id+'"><div class="row"><div class="id">'+o.id+'</div><div><div class="ti">'+o.title+'</div>'+
+        '<div class="by">提案：'+(pr?pr.name:'')+'</div></div></div><div class="fc">予測：'+o.forecast+'</div>'+
+        '<div class="bar"><i style="width:'+pct+'%"></i></div><div class="cnt">'+votes[o.id]+'票（'+pct+'%）</div></div>';
+    }).join('');
+    $('opts').querySelectorAll('.opt').forEach(el => el.onclick = () => { votes[el.dataset.id]++; renderVotes(); });
+  }
+  $('fnote').textContent = M.forecast_note || '';
+
+  // 過去の会議
+  let A = []; try { A = JSON.parse(document.getElementById('archive-data').textContent); } catch (e) {}
+  $('arch').innerHTML = A.slice().reverse().map(a =>
+    '<a href="'+a.href+'" class="'+(a.date===M.date?'cur':'')+'"><b>第'+a.number+'回 '+a.date.slice(5).replace('-','/')+'</b><span></span></a>').join('');
+  $('arch').querySelectorAll('a span').forEach((s, i) => s.textContent = A.slice().reverse()[i].agenda);
+  renderVotes();
+
+  // 再生
+  let idx = 0, playing = false, timer = null, speed = 1;
+  const speeds = [1, 1.5, 2];
+
+  function addLog(line){
+    const p = byId[line.speaker];
+    const log = $('log'); const e = log.querySelector('.empty'); if (e) e.remove();
+    const d = document.createElement('div'); d.className = 'msg';
+    d.innerHTML = '<div class="av" style="background:'+p.color+'">'+initial(p)+'</div><div class="b"><span class="n" style="color:'+p.color+'">'+p.name+'</span></div>';
+    d.querySelector('.b').appendChild(document.createTextNode(line.text));
+    log.appendChild(d);
+  }
+  function highlight(id){
+    Object.entries(seatEl).forEach(([k, el]) => el.classList.toggle('on', k === id));
+    const el = seatEl[id]; if (!el) return;
+    const r = room.getBoundingClientRect(), s = el.getBoundingClientRect();
+    $('now').style.setProperty('--tail', ((s.left + s.width/2 - r.left) / r.width * 100) + '%');
+  }
+  function progress(){ $('prog').style.width = (idx / M.lines.length * 100) + '%'; }
+  function finish(){
+    playing = false; clearTimeout(timer); highlight(null);
+    $('play').textContent = '▶ もう一度';
+    $('who').textContent = '会議終了'; $('txt').textContent = 'AかB、どちらにしますか？';
+    $('vote').classList.add('show');
+  }
+  function step(){
+    if (!playing) return;
+    if (idx >= M.lines.length) { finish(); return; }
+    const line = M.lines[idx], p = byId[line.speaker];
+    highlight(line.speaker);
+    $('who').textContent = p.name; $('who').style.color = p.color;
+    const t = $('txt'); t.textContent = '';
+    let c = 0;
+    (function type(){
+      if (!playing) return;
+      t.innerHTML = ''; t.appendChild(document.createTextNode(line.text.slice(0, c)));
+      const caret = document.createElement('span'); caret.className = 'caret'; t.appendChild(caret);
+      if (c < line.text.length) { c++; timer = setTimeout(type, 42 / speed); }
+      else {
+        t.textContent = line.text;
+        timer = setTimeout(() => { addLog(line); idx++; progress(); step(); }, 1100 / speed);
+      }
+    })();
+  }
+  function play(){
+    if (idx >= M.lines.length) reset();
+    playing = true; $('play').textContent = '⏸ 一時停止'; step();
+  }
+  function pause(){ playing = false; clearTimeout(timer); $('play').textContent = '▶ 続きから'; }
+  function reset(){
+    pause(); idx = 0; progress();
+    $('log').innerHTML = '<div class="empty">まだ発言はありません</div>';
+    $('vote').classList.remove('show'); highlight(null);
+    $('who').textContent = '▶ を押すと会議が始まります'; $('who').style.color = ''; $('txt').textContent = '';
+    $('play').textContent = '▶ 会議を再生';
+  }
+  $('play').onclick = () => playing ? pause() : play();
+  $('restart').onclick = reset;
+  $('speed').onclick = () => { speed = speeds[(speeds.indexOf(speed) + 1) % speeds.length]; $('speed').textContent = speed + 'x'; };
+  $('all').onclick = () => { pause(); while (idx < M.lines.length) { addLog(M.lines[idx]); idx++; } progress(); finish(); };
+})();
+</script>
+</body>
+</html>
