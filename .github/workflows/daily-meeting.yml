@@ -34,6 +34,8 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - uses: actions/setup-python@v5
         with:
@@ -42,12 +44,15 @@ jobs:
       - run: pip install anthropic
 
       - name: AIの会議を作る
-        if: github.event_name != 'push' || contains(join(github.event.commits.*.modified, ','), '.github/run-now')
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           AGENDA: ${{ github.event.inputs.agenda }}
           CONTEXT: ${{ github.event.inputs.context }}
         run: |
+          # push のときは .github/run-now が変わったときだけ会議を開く（画面の修正だけなら開かない）
+          if [ "${{ github.event_name }}" = "push" ] && ! git diff --name-only HEAD~1 HEAD | grep -qx ".github/run-now"; then
+            echo "画面の更新だけなので、会議は開きません"; exit 0
+          fi
           if [ -n "$AGENDA" ]; then
             python generate_meeting.py "$AGENDA" --context "$CONTEXT"
           else
