@@ -19,6 +19,8 @@ import random
 import re
 from pathlib import Path
 
+import memory
+
 ROOT = Path(__file__).parent
 MODEL = os.environ.get("KAIGI_MODEL", "claude-haiku-5-5")  # 安く回すなら Haiku
 JST = dt.timezone(dt.timedelta(hours=9))
@@ -52,15 +54,25 @@ def ask(system, user, max_tokens):
                    if getattr(b, "type", "text") == "text").strip()
 
 
-def persona_prompt(p, shop):
+def persona_prompt(p, shop, others=None):
+    rel = ""
+    if p.get("relations") and others:
+        rel = "ほかの人との関係:\n" + "\n".join(
+            f"- {others[k]['name']}: {v}" for k, v in p["relations"].items() if k in others) + "\n"
+    mem = memory.prompt_text(p)
     return (
         f"あなたは「{shop['place']}」にある「{shop['name']}」の経営会議に出ている{p['name']}"
         f"（{p['role']}、{p['age']}歳）です。\n"
         f"性格: {p['personality']}\n話し方: {p['tone']}\n"
+        f"口ぐせ: {'／'.join(p.get('catchphrases', []))}（毎回ではなく、2〜3回に1回くらい自然に入れる）\n"
+        f"くせ: {p.get('habits', '')}\n"
         f"好きなもの: {p['likes']}\n嫌いなもの: {p['dislikes']}\n"
-        "ルール:\n- 自分の人格と立場を必ず守る。相手の案にただ賛成するだけの発言は禁止。"
+        + rel
+        + (f"\n{mem}\n\n" if mem else "\n")
+        + "ルール:\n- 自分の人格と立場を必ず守る。相手の案にただ賛成するだけの発言は禁止。"
         "賛成するときも、自分のこだわりから条件や反論を必ず1つ付ける。\n"
         "- まとめ役でない人は、自分の推す案を譲らない。\n"
+        "- 覚えていることや相手との関係を、ときどき会話に出す（「この前も〜って言ってたよね」など）。\n"
         "- 1回の発言は1〜2文、50字以内。前の人の発言に反応する。\n"
         "- 発言の本文だけを書く。先頭に自分の名前や「〇〇：」を付けない。"
     )
@@ -77,7 +89,7 @@ def say(p, shop, agenda, context, recap, lines, by_id, extra=""):
         + f"\nここまでの会話:\n{transcript(lines, by_id) or '（まだ誰も話していない）'}\n\n"
         f"{extra}あなた（{p['name']}）の次の発言を書いてください。"
     )
-    text = ask(persona_prompt(p, shop), msg, 200).strip().strip("「」")
+    text = ask(persona_prompt(p, shop, by_id), msg, 200).strip().strip("「」")
     # 「トメ：」「松本会長: 」のような名前の付け足しを取る
     for _ in range(2):
         m = re.match(r"^\s*([^\s。、！？「」]{1,8}?)\s*[：:]\s*", text)
@@ -211,6 +223,9 @@ def main():
         return
     out.write_text(json.dumps(meeting, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"保存しました: {out}")
+    memory.write_log(meeting, ps)
+    memory.update_after_meeting(meeting, ps, ask, lambda q, sh: persona_prompt(q, sh, by_id), shop)
+    print("会議ログと、4人の記憶を更新しました（kaigi-log/・memory/）")
 
 
 def run():

@@ -9,6 +9,9 @@
 | `personas.json` | 4人の人格（年齢・性格・口調・好き嫌い・色）と店の設定。書き換えると人格が変わる |
 | `agendas.json` | 議題の予定表。上から順に使い、使った日が `used` に入る。足りなくなったら追加する |
 | `meetings/*.json` | 会議1回ぶんの会話・議題・A/B案（同じ日の2回目は `-2` が付く） |
+| `memory/<名前>.md` | 1人ずつの記憶（Obsidian形式）。「自分について」は人が書き足してOK、「ほかの人の印象」「覚えていること」は会議のたびにAIが更新 |
+| `kaigi-log/<日付> 第N回.md` | 会議の全文（Obsidian形式）。[[名前]]でキャラとつながる |
+| `memory.py` | 記憶の読み書き |
 | `generate_meeting.py` | Claude APIで会議を自動生成。前回の議題と投票結果にも触れる |
 | `viewer.template.html` | 会議室の画面のひな形 |
 | `build.py` | `index.html`（最新）と `m-日付.html`（過去の回）を作る |
@@ -37,3 +40,10 @@ python build.py
 - `agendas.json` の代わりに、前日のInstagramコメントから議題を作る
 - `options[].forecast` に経済モデルの予測を入れる
 - `options[].votes` にInstagramのコメント数（A/B）を入れる
+
+## Obsidianで記憶を見る・育てる
+1. Obsidianのコミュニティプラグイン「Git」を入れる
+2. このリポジトリをMacにクローンし、フォルダをObsidianの保管庫として開く
+3. Gitプラグインで「Pull」すると、毎朝の会議ログと記憶が届く
+4. `memory/<名前>.md` の「自分について」に設定を書き足して「Commit and push」すると、次の会議から本人がそれを踏まえて話す
+   （例：トメさんの欄に「最近、孫が生まれた」と足すと、会議で孫の話をし始める）
