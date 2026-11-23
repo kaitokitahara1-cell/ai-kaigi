@@ -58,9 +58,11 @@ def persona_prompt(p, shop):
         f"（{p['role']}、{p['age']}歳）です。\n"
         f"性格: {p['personality']}\n話し方: {p['tone']}\n"
         f"好きなもの: {p['likes']}\n嫌いなもの: {p['dislikes']}\n"
-        "ルール:\n- 自分の人格を必ず守る。安易に他の人に同意しない。\n"
-        "- 1回の発言は1〜2文、60字以内。会話らしく、前の人の発言に反応する。\n"
-        "- 発言の本文だけを書く（名前やかっこは付けない）。"
+        "ルール:\n- 自分の人格と立場を必ず守る。相手の案にただ賛成するだけの発言は禁止。"
+        "賛成するときも、自分のこだわりから条件や反論を必ず1つ付ける。\n"
+        "- まとめ役でない人は、自分の推す案を譲らない。\n"
+        "- 1回の発言は1〜2文、50字以内。前の人の発言に反応する。\n"
+        "- 発言の本文だけを書く。先頭に自分の名前や「〇〇：」を付けない。"
     )
 
 
@@ -75,13 +77,23 @@ def say(p, shop, agenda, context, recap, lines, by_id, extra=""):
         + f"\nここまでの会話:\n{transcript(lines, by_id) or '（まだ誰も話していない）'}\n\n"
         f"{extra}あなた（{p['name']}）の次の発言を書いてください。"
     )
-    return ask(persona_prompt(p, shop), msg, 200).strip("「」")
+    text = ask(persona_prompt(p, shop), msg, 200).strip().strip("「」")
+    # 「トメ：」「松本会長: 」のような名前の付け足しを取る
+    for _ in range(2):
+        m = re.match(r"^\s*([^\s。、！？「」]{1,8}?)\s*[：:]\s*", text)
+        if m and any(m.group(1) in q["name"] for q in by_id.values()):
+            text = text[m.end():]
+    return text
 
 
 def choose_next(others, agenda, lines, by_id):
     """次に話す人を選ぶ（同じ人が続かないようにする）。"""
     last = lines[-1]["speaker"] if lines else None
-    cands = [p for p in others if p["id"] != last]
+    count = {p["id"]: sum(1 for l in lines if l["speaker"] == p["id"]) for p in others}
+    fewest = min(count.values())
+    # 直前の人は外し、発言の少ない人（最少＋1回まで）から選ぶ
+    cands = [p for p in others if p["id"] != last and count[p["id"]] <= fewest + 1] \
+        or [p for p in others if p["id"] != last]
     names = "、".join(f"{p['id']}={p['name']}" for p in cands)
     text = ask("あなたは会議の進行役。次に発言させると議論が一番盛り上がる人のidだけを返す。",
                f"議題: {agenda}\n会話:\n{transcript(lines, by_id)}\n\n候補: {names}", 20)
@@ -176,7 +188,11 @@ def main():
         "会議を締めくくり、AかBかをフォロワーにコメントで決めてもらうよう呼びかけてください。")})
 
     options = summarize(agenda, lines, by_id)
+    name_to_id = {p["name"]: p["id"] for p in ps}
     for o in options:
+        if o.get("proposer") not in by_id:
+            o["proposer"] = next((i for n, i in name_to_id.items()
+                                  if n in str(o.get("proposer")) or str(o.get("proposer")) in n), "")
         o.setdefault("forecast", "（経済モデルの予測をここに入れる）")
         o["votes"] = 0
 
