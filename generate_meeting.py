@@ -194,5 +194,23 @@ def main():
     print(f"保存しました: {out}")
 
 
+def run():
+    """失敗したら、GitHubの画面（ログインなしでも見える注記）に理由を出す。"""
+    import sys
+    in_actions = os.environ.get("GITHUB_ACTIONS") == "true"
+    if in_actions and not os.environ.get("ANTHROPIC_API_KEY") and "--dry-run" not in sys.argv:
+        print("::error title=APIキーがありません::Secrets に ANTHROPIC_API_KEY が登録されていないか、名前が違います")
+        sys.exit(1)
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as e:  # noqa: BLE001
+        msg = f"{type(e).__name__}: {e}".replace("\n", " ")[:900]
+        if in_actions:
+            print(f"::error title=会議の生成に失敗::{msg}")
+        raise
+
+
 if __name__ == "__main__":
-    main()
+    run()

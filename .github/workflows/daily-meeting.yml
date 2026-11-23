@@ -4,6 +4,9 @@ name: daily-meeting
 on:
   schedule:
     - cron: "47 21 * * *"   # 毎日 6:47（日本時間）
+  push:
+    paths:
+      - ".github/run-now"     # このファイルを更新すると、すぐ1回動く
   workflow_dispatch:          # Actions 画面から手動でも実行できる
     inputs:
       agenda:
