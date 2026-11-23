@@ -27,7 +27,7 @@ JST = dt.timezone(dt.timedelta(hours=9))
 class DryClient:
     """APIキーなしで流れを確かめるための、決まった返事をするだけの代役。"""
     class _M:
-        def create(self, model, max_tokens, system, messages):
+        def create(self, model, max_tokens, system, messages, **kw):
             u = messages[0]["content"]
             if "候補:" in u:
                 ids = re.findall(r"(\w+)=", u.split("候補:")[1])
@@ -45,8 +45,11 @@ client = None
 
 def ask(system, user, max_tokens):
     r = client.messages.create(model=MODEL, max_tokens=max_tokens, system=system,
+                               thinking={"type": "disabled"},  # 短い発言なので考えるステップは使わない
                                messages=[{"role": "user", "content": user}])
-    return r.content[0].text.strip()
+    # 返事には「考え中のメモ」など本文以外が混ざることがあるので、本文だけを集める
+    return "".join(getattr(b, "text", "") for b in r.content
+                   if getattr(b, "type", "text") == "text").strip()
 
 
 def persona_prompt(p, shop):
